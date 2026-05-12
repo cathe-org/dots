@@ -1,0 +1,130 @@
+# The Caddyfile is an easy way to configure your Caddy web server.
+#
+# Unless the file starts with a global options block, the first
+# uncommented line is always the address of your site.
+#
+# To use your own domain name (with automatic HTTPS), first make
+# sure your domain's A/AAAA DNS records are properly pointed to
+# this machine's public IP, then replace ":80" below with your
+# domain name.
+
+# Refer to the Caddy docs for more information:
+# https://caddyserver.com/docs/caddyfile
+{
+	acme_dns cloudflare cfut_Bgp9y3tq2wJR6DU6qhBQkmBHbYpAuWNZb6pG6eql5cb245a0
+}
+
+cathe.dev {
+	root * /var/www/cathe.dev
+	# try_files {path}.html {path}
+	file_server
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /404.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+	}
+}
+
+*.cathe.dev {
+	@has_odoc file /var/www/cathe.dev/subdomains/{labels.2}/_html/index.html
+	handle @has_odoc {
+		root * /var/www/cathe.dev/subdomains/{labels.2}/_html
+		try_files {path}.html {path}/index.html
+    @root_path path /
+    rewrite @root_path /{labels.2}/index.html
+		file_server
+	}
+	@has_site file /var/www/cathe.dev/subdomains/{labels.2}/site/index.html
+	handle @has_site {
+		root * /var/www/cathe.dev/subdomains/{labels.2}/site
+		file_server
+	}
+	handle {
+		root * /var/www/cathe.dev/subdomains/{labels.2}
+		file_server
+	}
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /404.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+	}
+}
+
+cathe.work {
+	root * /var/www/cathe.work
+	# try_files {path}.html {path}
+	file_server
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /404.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+	}
+}
+
+*.cathe.work {
+	@has_site file /var/www/cathe.work/subdomains/{labels.2}/site/index.html
+	handle @has_site {
+		root * /var/www/cathe.work/subdomains/{labels.2}/site
+		file_server
+	}
+	handle {
+		root * /var/www/cathe.work/subdomains/{labels.2}
+		file_server
+	}
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /404.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+	}
+}
+
+jpears.me {
+	root * /var/www/jpears.me
+	file_server
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /404.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+	}
+}
+
+*.jpears.me {
+	@has_site file /var/www/jpears.me/subdomains/{labels.2}/site/index.html
+	handle @has_site {
+		root * /var/www/jpears.me/subdomains/{labels.2}/site
+		file_server
+	}
+	handle {
+		root * /var/www/jpears.me/subdomains/{labels.2}
+		file_server
+	}
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /404.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+	}
+}

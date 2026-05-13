@@ -11,7 +11,7 @@
 # Refer to the Caddy docs for more information:
 # https://caddyserver.com/docs/caddyfile
 {
-	acme_dns cloudflare cfut_Bgp9y3tq2wJR6DU6qhBQkmBHbYpAuWNZb6pG6eql5cb245a0
+	acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 }
 
 cathe.dev {

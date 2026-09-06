@@ -1,0 +1,66 @@
+name: Generate and Deploy OCaml Docs
+
+on:
+  push:
+    branches: [docs]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.x
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-doc -y
+
+      - name: Generate docs
+        run: opam exec -- dune build @doc
+
+      - name: Create subdomain directory on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.WEBSERVER_IP }}
+          username: ${{ secrets.WEBSERVER_USER }}
+          key: ${{ secrets.WEBSERVER_SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.WEBSERVER_SSH_PASSPHRASE }}
+          script: mkdir -p /var/www/${{ vars.SITE }}/subdomains/${{ github.event.repository.name }}
+
+      - name: Copy docs to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.WEBSERVER_IP }}
+          username: ${{ secrets.WEBSERVER_USER }}
+          key: ${{ secrets.WEBSERVER_SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.WEBSERVER_SSH_PASSPHRASE }}
+          source: "./_build/default/_doc/_html/"
+          target: /var/www/${{ vars.SITE }}/subdomains/${{ github.event.repository.name }}/
+          strip_components: 4
+
+      # - name: Extract html dir
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.WEBSERVER_IP }}
+      #     username: ${{ secrets.WEBSERVER_USER }}
+      #     key: ${{ secrets.WEBSERVER_SSH_PRIVATE_KEY }}
+      #     passphrase: ${{ secrets.WEBSERVER_SSH_PASSPHRASE }}
+      #     script: |
+      #       mv /var/www/${{ vars.SITE }}/subdomains/${{ github.event.repository.name }}/_html/${{ github.event.repository.name }}/ /var/tmp/${{ vars.SITE }}/
+      #       mv /var/www/${{ vars.SITE }}/subdomains/${{ github.event.repository.name }}/odoc.support/ /var/tmp/${{ vars.SITE }}_odoc.support/
+      #       rm -rf /var/www/${{ vars.SITE }}/subdomains/${{ github.event.repository.name }}/
+      #       mv /var/tmp/${{ vars.SITE }}/ /var/www/${{ vars.SITE }}/subdomains/${{ github.event.repository.name }}/
+      #       mv /var/tmp/${{ vars.SITE }}_odoc.support/ /var/www/${{ vars.SITE }}/subdomains/${{ github.event.repository.name }}/odoc.support/
+
+      # - name: Fix links
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.WEBSERVER_IP }}
+      #     username: ${{ secrets.WEBSERVER_USER }}
+      #     key: ${{ secrets.WEBSERVER_SSH_PRIVATE_KEY }}
+      #     passphrase: ${{ secrets.WEBSERVER_SSH_PASSPHRASE }}
+      #     script: |
+      #       sed -i -e

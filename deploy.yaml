@@ -1,0 +1,71 @@
+# Deploy config for webserver/cmd/webserver's `deploy` subcommand.
+#
+# `webserver deploy --config deploy.yaml` clones/pulls each repo below,
+# builds it with build_method, publishes the result into the matching
+# /var/www subdomain directory (see ../Caddyfile), and reloads Caddy.
+#
+# Note for future editors: this started as a sketch in README.md using
+# lists-of-single-key-maps (e.g. `config: [{auto_rebuild: ...}, ...]`).
+# It's flattened here into plain maps, which unmarshal much more directly
+# into Go structs (see webserver/internal/config) — same fields, cleaner
+# shape.
+
+caddy_binary: caddy
+caddyfile: Caddyfile
+var_www: /var/www
+work_dir: work
+
+auto_rebuild:
+  enable: true
+  interval: daily
+
+email_notifications:
+  enable: true
+  warnings: true
+  general: false
+
+flags:
+  clean: false
+  reset: false
+
+repos:
+  - name: notes
+    url: "" # e.g. git@github.com:cathe-org/notes.git
+    branch: main
+    build_method: mkdocs
+    domain:
+      - name: notes.cathe.dev
+        indexed: true
+        linked: [] # can't remember what this field was meant to be for?
+    config:
+      auto_rebuild: true
+      input_dir: ./
+      theme: material
+      colors:
+        accent: []
+        fg: []
+        bg: []
+
+  - name: cloakaml-docs
+    url: "git@github.com:thecathe/cloakaml.git"
+    branch: main
+    build_method: odoc
+    domain:
+      - name: cloakaml.cathe.dev
+        indexed: true
+        linked: [] # can't remember what this field was meant to be for?
+    config:
+      auto_rebuild: true
+      input_dir: ./
+
+  - name: indimo-notes
+    url: "git@github.com:thecathe/INDIMO.git"
+    branch: main
+    build_method: mkdocs
+    domain:
+      - name: indimo.cathe.dev
+        indexed: true
+        linked: [] # can't remember what this field was meant to be for?
+    config:
+      auto_rebuild: true
+      input_dir: ./

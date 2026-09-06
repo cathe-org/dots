@@ -1,0 +1,63 @@
+name: Deploy MD Docs
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**','.github/workflows/deploy-docs-md.yml']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive subdomain
+        id: vars
+        run: |
+          name="${{ github.event.repository.name }}"
+          sub="$(echo "${name%-docs}" | tr '[:upper:]' '[:lower:]')"
+          echo "subdomain=$sub" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure MkDocs config
+        run: |
+          if [ ! -f mkdocs.yml ]; then
+            {
+              echo "site_name: ${{ github.event.repository.name }}"
+              echo "docs_dir: docs"
+              echo "theme:"
+              echo "  name: shadcn"
+            } > mkdocs.yml
+          fi
+
+      - name: Install MkDocs
+        run: pip install mkdocs-shadcn
+
+      - name: Build site
+        run: mkdocs build
+
+      - name: Reset target directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.WEBSERVER_IP }}
+          username: ${{ secrets.WEBSERVER_USER }}
+          key: ${{ secrets.WEBSERVER_SSH_PRIVATE_KEY }}
+          script: |
+            SITE="${{ vars.SITE }}"
+            SUB="${{ steps.vars.outputs.subdomain }}"
+            if [ -z "$SITE" ] || [ -z "$SUB" ]; then
+              echo "Refusing to deploy: SITE or subdomain is empty" >&2
+              exit 1
+            fi
+            TARGET="/var/www/$SITE/subdomains/$SUB"
+            rm -rf "$TARGET"
+            mkdir -p "$TARGET"
+
+      - name: Copy site to webserver
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.WEBSERVER_IP }}
+          username: ${{ secrets.WEBSERVER_USER }}
+          key: ${{ secrets.WEBSERVER_SSH_PRIVATE_KEY }}
+          source: "site/*"
+          target: "/var/www/${{ vars.SITE }}/subdomains/${{ steps.vars.outputs.subdomain }}"
+          strip_components: 1
